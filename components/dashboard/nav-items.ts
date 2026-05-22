@@ -17,24 +17,24 @@ export type DashboardNavItem = {
 };
 
 export const sidebarNavItems: DashboardNavItem[] = [
-  { id: "home", label: "Home", href: "/dashboard/home", icon: LayoutGrid },
-  { id: "groups", label: "My Groups", href: "/dashboard/groups", icon: Users },
+  { id: "home", label: "Home", href: "/home", icon: LayoutGrid },
+  { id: "groups", label: "My Groups", href: "/groups", icon: Users },
   {
     id: "assignments",
     label: "Assignments",
-    href: "/dashboard",
+    href: "/",
     icon: ClipboardList,
   },
   {
     id: "toolkit",
     label: "AI Teacher's Toolkit",
-    href: "/dashboard/toolkit",
+    href: "/toolkit",
     icon: BookOpen,
   },
   {
     id: "library",
     label: "My Library",
-    href: "/dashboard/library",
+    href: "/library",
     icon: Clock,
   },
 ];
@@ -42,28 +42,28 @@ export const sidebarNavItems: DashboardNavItem[] = [
 export const settingsNavItem: DashboardNavItem = {
   id: "settings",
   label: "Settings",
-  href: "/dashboard/settings",
+  href: "/settings",
   icon: Settings,
 };
 
 export const mobileNavItems: DashboardNavItem[] = [
-  { id: "home", label: "Home", href: "/dashboard/home", icon: LayoutGrid },
+  { id: "home", label: "Home", href: "/home", icon: LayoutGrid },
   {
     id: "assignments",
     label: "Assignments",
-    href: "/dashboard",
+    href: "/",
     icon: ClipboardList,
   },
   {
     id: "library",
     label: "Library",
-    href: "/dashboard/library",
+    href: "/library",
     icon: Clock,
   },
   {
     id: "toolkit",
     label: "AI Toolkit",
-    href: "/dashboard/toolkit",
+    href: "/toolkit",
     icon: Sparkles,
   },
 ];

@@ -13,13 +13,13 @@ type SidebarProps = {
 };
 
 function getActiveNavId(pathname: string) {
-  if (pathname === "/dashboard" || pathname.startsWith("/dashboard/assignments"))
+  if (pathname === "/" || pathname.startsWith("/assignments"))
     return "assignments";
-  if (pathname.startsWith("/dashboard/home")) return "home";
-  if (pathname.startsWith("/dashboard/groups")) return "groups";
-  if (pathname.startsWith("/dashboard/toolkit")) return "toolkit";
-  if (pathname.startsWith("/dashboard/library")) return "library";
-  if (pathname.startsWith("/dashboard/settings")) return "settings";
+  if (pathname.startsWith("/home")) return "home";
+  if (pathname.startsWith("/groups")) return "groups";
+  if (pathname.startsWith("/toolkit")) return "toolkit";
+  if (pathname.startsWith("/library")) return "library";
+  if (pathname.startsWith("/settings")) return "settings";
   return "assignments";
 }
 
