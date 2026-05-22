@@ -22,14 +22,18 @@ model User {
 }
 
 model Assignment {
-  id          String           @id @default(auto()) @map("_id") @db.ObjectId
-  title       String
-  description String?
-  status      AssignmentStatus @default(DRAFT)
-  userId      String           @db.ObjectId
-  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
+  id             String           @id @default(auto()) @map("_id") @db.ObjectId
+  title          String
+  description    String?
+  dueDate        String?
+  additionalInfo String?
+  uploadedFile   Json?
+  questionRows   Json?
+  status         AssignmentStatus @default(ACTIVE)
+  userId         String           @db.ObjectId
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
 
   questionPapers QuestionPaper[]
 }

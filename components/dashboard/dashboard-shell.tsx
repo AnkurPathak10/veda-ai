@@ -5,6 +5,7 @@ import { DashboardNavbar } from "./dashboard-navbar";
 import { MobileBottomNav } from "./mobile-bottom-nav";
 import { MobileFab } from "./mobile-fab";
 import { Sidebar } from "./sidebar";
+import { ToastProvider } from "@/components/ui/toast-provider";
 
 type DashboardShellProps = {
   children: React.ReactNode;
@@ -61,6 +62,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
 
       <MobileFab />
       <MobileBottomNav />
+      <ToastProvider />
     </div>
   );
 }

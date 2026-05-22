@@ -1,7 +1,7 @@
 "use client";
 
+import { useAuth } from "@clerk/nextjs";
 import { ArrowLeft, ArrowRight, Loader2, Mic } from "lucide-react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FileUploadZone } from "@/components/create-assignment/file-upload-zone";
 import { DueDatePicker } from "@/components/create-assignment/due-date-picker";
@@ -12,14 +12,18 @@ import {
   QuestionTypeRowDesktop,
   QuestionTypeRowMobile,
 } from "@/components/create-assignment/question-type-rows";
+import { createAssignment } from "@/lib/assignments/api";
 import { generateQuestionPaper } from "@/lib/create-assignment/generate-question-paper";
 import {
   getAssignmentTotals,
   useCreateAssignmentStore,
 } from "@/stores/create-assignment-store";
+import { useToastStore } from "@/stores/toast-store";
 
 export function CreateAssignmentForm() {
   const router = useRouter();
+  const { getToken } = useAuth();
+  const showToast = useToastStore((s) => s.show);
 
   const step = useCreateAssignmentStore((s) => s.step);
   const uploadedFile = useCreateAssignmentStore((s) => s.uploadedFile);
@@ -30,12 +34,17 @@ export function CreateAssignmentForm() {
   const isGenerating = useCreateAssignmentStore((s) => s.isGenerating);
   const generationError = useCreateAssignmentStore((s) => s.generationError);
   const questionPaper = useCreateAssignmentStore((s) => s.questionPaper);
+  const isSaving = useCreateAssignmentStore((s) => s.isSaving);
+  const saveError = useCreateAssignmentStore((s) => s.saveError);
   const setStep = useCreateAssignmentStore((s) => s.setStep);
   const setDueDate = useCreateAssignmentStore((s) => s.setDueDate);
   const setAdditionalInfo = useCreateAssignmentStore((s) => s.setAdditionalInfo);
   const setIsGenerating = useCreateAssignmentStore((s) => s.setIsGenerating);
   const setGenerationError = useCreateAssignmentStore((s) => s.setGenerationError);
   const setQuestionPaper = useCreateAssignmentStore((s) => s.setQuestionPaper);
+  const setIsSaving = useCreateAssignmentStore((s) => s.setIsSaving);
+  const setSaveError = useCreateAssignmentStore((s) => s.setSaveError);
+  const reset = useCreateAssignmentStore((s) => s.reset);
   const addQuestionRow = useCreateAssignmentStore((s) => s.addQuestionRow);
   const removeQuestionRow = useCreateAssignmentStore((s) => s.removeQuestionRow);
   const updateQuestionRow = useCreateAssignmentStore((s) => s.updateQuestionRow);
@@ -48,9 +57,14 @@ export function CreateAssignmentForm() {
       return;
     }
 
-    setIsGenerating(true);
     setGenerationError(null);
     setStep(2);
+
+    if (questionPaper) {
+      return;
+    }
+
+    setIsGenerating(true);
 
     try {
       const result = await generateQuestionPaper({
@@ -85,10 +99,49 @@ export function CreateAssignmentForm() {
     if (step === 2) {
       setStep(1);
       setGenerationError(null);
+      setSaveError(null);
       return;
     }
 
     router.push("/");
+  };
+
+  const handleDone = async () => {
+    if (!uploadedFile || !questionPaper || !dueDate || isSaving) {
+      return;
+    }
+
+    setIsSaving(true);
+    setSaveError(null);
+
+    try {
+      const token = await getToken();
+      await createAssignment(
+        {
+          dueDate,
+          additionalInfo: additionalInfo.trim() || undefined,
+          uploadedFile,
+          questionRows: questionRows.map(({ type, count, marks }) => ({
+            type,
+            count,
+            marks,
+          })),
+          questionPaper,
+        },
+        token,
+      );
+
+      reset();
+      showToast("Assignment saved successfully");
+      router.push("/");
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to save assignment";
+      setSaveError(message);
+      showToast(message, "error");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const progressWidth = step === 1 ? "w-1/2" : "w-full";
@@ -265,6 +318,12 @@ export function CreateAssignmentForm() {
             {!isGenerating && questionPaper && (
               <QuestionPaperPreview questionPaper={questionPaper} />
             )}
+
+            {!isGenerating && saveError && (
+              <div className="mt-4 rounded-2xl border border-[#fecaca] bg-[#fef2f2] px-5 py-4 text-sm text-[#b91c1c]">
+                {saveError}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -301,13 +360,24 @@ export function CreateAssignmentForm() {
               )}
             </button>
           ) : (
-            <Link
-              href="/"
-              className="inline-flex items-center gap-2 rounded-full bg-[#1a1a1a] px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#2d2d2d]"
+            <button
+              type="button"
+              onClick={() => void handleDone()}
+              disabled={isSaving || isGenerating || !questionPaper}
+              className="inline-flex items-center gap-2 rounded-full bg-[#1a1a1a] px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#2d2d2d] disabled:opacity-60"
             >
-              Done
-              <ArrowRight className="h-4 w-4" />
-            </Link>
+              {isSaving ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  Done
+                  <ArrowRight className="h-4 w-4" />
+                </>
+              )}
+            </button>
           )}
         </div>
       </div>

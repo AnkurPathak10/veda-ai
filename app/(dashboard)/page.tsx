@@ -1,5 +1,5 @@
-import { EmptyAssignmentsState } from "@/components/dashboard/empty-assignments-state";
+import { AssignmentsPage } from "@/components/assignments/assignments-page";
 
 export default function DashboardPage() {
-  return <EmptyAssignmentsState />;
+  return <AssignmentsPage />;
 }

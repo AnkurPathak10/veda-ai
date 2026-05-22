@@ -4,7 +4,14 @@ import express from "express";
 import { createServer } from "http";
 import path from "node:path";
 import { Server } from "socket.io";
+import { requireBearerAuth } from "./lib/auth.js";
 import { prisma } from "./lib/prisma.js";
+import {
+  handleCreateAssignment,
+  handleDeleteAssignment,
+  handleGetAssignment,
+  handleListAssignments,
+} from "./routes/assignments.js";
 import { handleGenerateQuestionPaper } from "./routes/generate-question-paper.js";
 import {
   handleUpload,
@@ -40,6 +47,22 @@ app.post("/api/assignments/generate", (req, res) => {
   void handleGenerateQuestionPaper(req, res);
 });
 
+app.get("/api/assignments", requireBearerAuth, (req, res) => {
+  void handleListAssignments(req, res);
+});
+
+app.post("/api/assignments", requireBearerAuth, (req, res) => {
+  void handleCreateAssignment(req, res);
+});
+
+app.get("/api/assignments/:id", requireBearerAuth, (req, res) => {
+  void handleGetAssignment(req, res);
+});
+
+app.delete("/api/assignments/:id", requireBearerAuth, (req, res) => {
+  void handleDeleteAssignment(req, res);
+});
+
 app.get("/", async (_req, res) => {
   try {
     await prisma.$runCommandRaw({ ping: 1 });
@@ -50,6 +73,7 @@ app.get("/", async (_req, res) => {
         health: "/health",
         uploads: "/api/uploads",
         generate: "/api/assignments/generate",
+        assignments: "/api/assignments",
       },
     });
   } catch {
@@ -60,6 +84,7 @@ app.get("/", async (_req, res) => {
         health: "/health",
         uploads: "/api/uploads",
         generate: "/api/assignments/generate",
+        assignments: "/api/assignments",
       },
     });
   }

@@ -1,5 +1,13 @@
-import { CreateAssignmentForm } from "@/components/create-assignment/create-assignment-form";
+import {
+  CreateAssignmentHydration,
+  CreateAssignmentPageClient,
+} from "@/components/create-assignment/create-assignment-page-client";
 
 export default function CreateAssignmentPage() {
-  return <CreateAssignmentForm />;
+  return (
+    <>
+      <CreateAssignmentHydration />
+      <CreateAssignmentPageClient />
+    </>
+  );
 }

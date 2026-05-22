@@ -8,7 +8,10 @@ import { CREATE_ASSIGNMENT_HREF } from "./nav-items";
 export function MobileFab() {
   const pathname = usePathname();
 
-  if (pathname.startsWith("/assignments/create")) {
+  if (
+    pathname.startsWith("/assignments/create") ||
+    /^\/assignments\/[^/]+$/.test(pathname)
+  ) {
     return null;
   }
 

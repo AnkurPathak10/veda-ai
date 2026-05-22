@@ -3,12 +3,16 @@
 import { Settings, Sparkles, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect } from "react";
+import { useAuth } from "@clerk/nextjs";
 import {
   CREATE_ASSIGNMENT_HREF,
   settingsNavItem,
   sidebarNavItems,
 } from "./nav-items";
 import { VedaLogo } from "./veda-logo";
+import { fetchAssignments } from "@/lib/assignments/api";
+import { useAssignmentsStore } from "@/stores/assignments-store";
 
 type SidebarProps = {
   onNavigate?: () => void;
@@ -30,6 +34,23 @@ function getActiveNavId(pathname: string) {
 export function Sidebar({ onNavigate, showClose, onClose }: SidebarProps) {
   const pathname = usePathname();
   const activeNavId = getActiveNavId(pathname);
+  const { getToken } = useAuth();
+  const assignmentCount = useAssignmentsStore((s) => s.total);
+  const setAssignments = useAssignmentsStore((s) => s.setAssignments);
+
+  useEffect(() => {
+    async function loadCount() {
+      try {
+        const token = await getToken();
+        const data = await fetchAssignments(token);
+        setAssignments(data.assignments, data.total);
+      } catch {
+        // Count badge is optional; assignments page handles errors.
+      }
+    }
+
+    void loadCount();
+  }, [getToken, pathname, setAssignments]);
 
   return (
     <aside className="flex h-full w-[260px] shrink-0 flex-col rounded-2xl bg-white px-4 py-5 shadow-sm lg:w-[272px]">
@@ -77,7 +98,12 @@ export function Sidebar({ onNavigate, showClose, onClose }: SidebarProps) {
                 }`}
                 strokeWidth={isActive ? 2.25 : 2}
               />
-              {item.label}
+              <span className="flex-1">{item.label}</span>
+              {item.id === "assignments" && assignmentCount > 0 && (
+                <span className="rounded-full bg-[#f97316] px-2 py-0.5 text-xs font-semibold text-white">
+                  {assignmentCount}
+                </span>
+              )}
             </Link>
           );
         })}
