@@ -9,6 +9,8 @@ import {
   Users,
 } from "lucide-react";
 
+export const CREATE_ASSIGNMENT_HREF = "/assignments/create";
+
 export type DashboardNavItem = {
   label: string;
   href: string;

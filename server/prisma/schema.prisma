@@ -1,0 +1,59 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("MONGODB_URI")
+}
+
+// Synced from Clerk on first sign-in or via webhook
+model User {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  clerkId   String   @unique
+  email     String?
+  firstName String?
+  lastName  String?
+  imageUrl  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  assignments Assignment[]
+}
+
+model Assignment {
+  id          String           @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  description String?
+  status      AssignmentStatus @default(DRAFT)
+  userId      String           @db.ObjectId
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  questionPapers QuestionPaper[]
+}
+
+model QuestionPaper {
+  id           String              @id @default(auto()) @map("_id") @db.ObjectId
+  assignmentId String              @db.ObjectId
+  assignment   Assignment          @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  prompt       String?
+  content      String?
+  status       QuestionPaperStatus @default(PENDING)
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+}
+
+enum AssignmentStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+enum QuestionPaperStatus {
+  PENDING
+  GENERATING
+  COMPLETED
+  FAILED
+}

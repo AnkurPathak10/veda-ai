@@ -1,4 +1,6 @@
 import { Plus } from "lucide-react";
+import Link from "next/link";
+import { CREATE_ASSIGNMENT_HREF } from "@/components/dashboard/nav-items";
 import { EmptyAssignmentsIllustration } from "./empty-assignments-illustration";
 
 export function EmptyAssignmentsState() {
@@ -16,13 +18,13 @@ export function EmptyAssignmentsState() {
         assist with grading.
       </p>
 
-      <button
-        type="button"
+      <Link
+        href={CREATE_ASSIGNMENT_HREF}
         className="mt-8 inline-flex items-center gap-2 rounded-full bg-[#1a1a1a] px-8 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-[#2d2d2d] sm:px-10 sm:text-base"
       >
         <Plus className="h-5 w-5" strokeWidth={2.5} />
         Create Your First Assignment
-      </button>
+      </Link>
     </div>
   );
 }

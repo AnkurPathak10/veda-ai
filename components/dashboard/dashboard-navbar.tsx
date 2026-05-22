@@ -8,6 +8,8 @@ import {
   LayoutGrid,
   Menu,
 } from "lucide-react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { VedaLogo } from "./veda-logo";
 
 type DashboardNavbarProps = {
@@ -16,6 +18,9 @@ type DashboardNavbarProps = {
 
 export function DashboardNavbar({ onMenuClick }: DashboardNavbarProps) {
   const { user, isLoaded } = useUser();
+  const pathname = usePathname();
+  const router = useRouter();
+  const isCreateAssignment = pathname.startsWith("/assignments/create");
   const displayName =
     user?.fullName ||
     [user?.firstName, user?.lastName].filter(Boolean).join(" ") ||
@@ -27,6 +32,7 @@ export function DashboardNavbar({ onMenuClick }: DashboardNavbarProps) {
       <div className="hidden items-center gap-3 lg:flex">
         <button
           type="button"
+          onClick={() => router.push(isCreateAssignment ? "/" : "/")}
           className="flex h-9 w-9 items-center justify-center rounded-lg text-[#6b7280] transition-colors hover:bg-[#f3f4f6] hover:text-[#1a1a1a]"
           aria-label="Go back"
         >
@@ -34,7 +40,15 @@ export function DashboardNavbar({ onMenuClick }: DashboardNavbarProps) {
         </button>
         <div className="flex items-center gap-2 text-sm text-[#9ca3af]">
           <LayoutGrid className="h-4 w-4" />
-          <span>Assignment</span>
+          <Link href="/" className="hover:text-[#6b7280]">
+            Assignment
+          </Link>
+          {isCreateAssignment && (
+            <>
+              <span>/</span>
+              <span className="text-[#1a1a1a]">Create</span>
+            </>
+          )}
         </div>
       </div>
 

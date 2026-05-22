@@ -3,7 +3,11 @@
 import { Settings, Sparkles, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { settingsNavItem, sidebarNavItems } from "./nav-items";
+import {
+  CREATE_ASSIGNMENT_HREF,
+  settingsNavItem,
+  sidebarNavItems,
+} from "./nav-items";
 import { VedaLogo } from "./veda-logo";
 
 type SidebarProps = {
@@ -43,13 +47,13 @@ export function Sidebar({ onNavigate, showClose, onClose }: SidebarProps) {
         )}
       </div>
 
-      <button
-        type="button"
+      <Link
+        href={CREATE_ASSIGNMENT_HREF}
         className="mt-6 flex w-full items-center justify-center gap-2 rounded-full border border-[#d4a574]/60 bg-[#1a1a1a] px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#2d2d2d]"
       >
         <Sparkles className="h-4 w-4 text-[#fbbf24]" />
         Create Assignment
-      </button>
+      </Link>
 
       <nav className="mt-6 flex flex-1 flex-col gap-1">
         {sidebarNavItems.map((item) => {
