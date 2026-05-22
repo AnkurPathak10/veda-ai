@@ -62,8 +62,8 @@ Schema:
       "questions": [
         {
           "number": 1,
-          "difficulty": "Easy" | "Moderate" | "Challenging",
           "text": "string",
+          "difficulty": "Easy" | "Moderate" | "Challenging",
           "marks": number,
           "options": ["A. ...", "B. ...", "C. ...", "D. ..."]
         }
@@ -77,7 +77,8 @@ Rules:
 - Base ALL questions strictly on the provided source material.
 - Create exactly the sections and question counts specified.
 - Number questions sequentially across the entire paper (1, 2, 3...).
-- Each question must include difficulty (Easy, Moderate, or Challenging) and exact marks requested.
+- Each question must include exact marks requested and a difficulty level (Easy, Moderate, or Challenging).
+- Section title should be like "Section A" and questionType should be the question category (e.g. "Multiple Choice Questions").
 - header.maximumMarks must equal ${totalMarks}.
 - Include an answer key entry for every question (${totalQuestions} total).
 - Infer subject, class/grade, and institution from source + teacher notes when possible; otherwise use reasonable placeholders.

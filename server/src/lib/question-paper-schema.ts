@@ -4,8 +4,8 @@ const difficultySchema = z.enum(["Easy", "Moderate", "Challenging"]);
 
 const questionSchema = z.object({
   number: z.number().int().positive(),
-  difficulty: difficultySchema,
   text: z.string().min(1),
+  difficulty: difficultySchema,
   marks: z.number().int().positive(),
   options: z.array(z.string().min(1)).optional(),
 });

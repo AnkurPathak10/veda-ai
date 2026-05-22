@@ -4,8 +4,8 @@ export type QuestionDifficulty = "Easy" | "Moderate" | "Challenging";
 
 export type GeneratedQuestion = {
   number: number;
-  difficulty: QuestionDifficulty;
   text: string;
+  difficulty?: QuestionDifficulty;
   marks: number;
   options?: string[];
 };
