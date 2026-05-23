@@ -6,6 +6,7 @@ import path from "node:path";
 import { Server } from "socket.io";
 import { requireBearerAuth } from "./lib/auth.js";
 import { prisma } from "./lib/prisma.js";
+import { closeRedis, connectRedis, pingRedis } from "./lib/redis.js";
 import {
   handleCreateAssignment,
   handleDeleteAssignment,
@@ -13,12 +14,18 @@ import {
   handleListAssignments,
 } from "./routes/assignments.js";
 import { handleGenerateQuestionPaper } from "./routes/generate-question-paper.js";
+import { handleGetJobStatus } from "./routes/jobs.js";
 import { handleTranscribeSpeech } from "./routes/speech.js";
 import {
   handleUpload,
   handleUploadError,
   uploadMiddleware,
 } from "./routes/uploads.js";
+import { closeQuestionPaperQueue } from "./queues/question-paper-queue.js";
+import {
+  closeQuestionPaperWorker,
+  startQuestionPaperWorker,
+} from "./workers/question-paper-worker.js";
 
 const app = express();
 const httpServer = createServer(app);
@@ -57,6 +64,10 @@ app.post("/api/assignments/generate", (req, res) => {
   void handleGenerateQuestionPaper(req, res);
 });
 
+app.get("/api/jobs/:jobId", (req, res) => {
+  void handleGetJobStatus(req, res);
+});
+
 app.get("/api/assignments", requireBearerAuth, (req, res) => {
   void handleListAssignments(req, res);
 });
@@ -76,25 +87,33 @@ app.delete("/api/assignments/:id", requireBearerAuth, (req, res) => {
 app.get("/", async (_req, res) => {
   try {
     await prisma.$runCommandRaw({ ping: 1 });
+    const redisConnected = await pingRedis();
+
     res.json({
       message: "VedaAI API server is running",
       database: "connected",
+      redis: redisConnected ? "connected" : "disconnected",
       endpoints: {
         health: "/health",
         uploads: "/api/uploads",
         generate: "/api/assignments/generate",
+        jobs: "/api/jobs/:jobId",
         speech: "/api/speech/transcribe",
         assignments: "/api/assignments",
       },
     });
   } catch {
+    const redisConnected = await pingRedis();
+
     res.status(503).json({
       message: "VedaAI API server is running",
       database: "disconnected",
+      redis: redisConnected ? "connected" : "disconnected",
       endpoints: {
         health: "/health",
         uploads: "/api/uploads",
         generate: "/api/assignments/generate",
+        jobs: "/api/jobs/:jobId",
         speech: "/api/speech/transcribe",
         assignments: "/api/assignments",
       },
@@ -105,9 +124,26 @@ app.get("/", async (_req, res) => {
 app.get("/health", async (_req, res) => {
   try {
     await prisma.$runCommandRaw({ ping: 1 });
-    res.json({ status: "ok", database: "connected" });
+    const redisConnected = await pingRedis();
+
+    if (!redisConnected) {
+      res.status(503).json({
+        status: "error",
+        database: "connected",
+        redis: "disconnected",
+      });
+      return;
+    }
+
+    res.json({ status: "ok", database: "connected", redis: "connected" });
   } catch {
-    res.status(503).json({ status: "error", database: "disconnected" });
+    const redisConnected = await pingRedis();
+
+    res.status(503).json({
+      status: "error",
+      database: "disconnected",
+      redis: redisConnected ? "connected" : "disconnected",
+    });
   }
 });
 
@@ -126,18 +162,34 @@ async function start() {
     process.exit(1);
   }
 
+  try {
+    await connectRedis();
+    console.log("Connected to Redis");
+    startQuestionPaperWorker();
+  } catch (error) {
+    console.error("Failed to connect to Redis:", error);
+    process.exit(1);
+  }
+
   httpServer.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
   });
 }
 
-process.on("SIGINT", async () => {
+async function shutdown() {
+  await closeQuestionPaperWorker();
+  await closeQuestionPaperQueue();
+  await closeRedis();
   await prisma.$disconnect();
+}
+
+process.on("SIGINT", async () => {
+  await shutdown();
   process.exit(0);
 });
 
 process.on("SIGTERM", async () => {
-  await prisma.$disconnect();
+  await shutdown();
   process.exit(0);
 });
 

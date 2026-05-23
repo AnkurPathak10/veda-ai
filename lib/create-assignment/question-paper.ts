@@ -55,6 +55,22 @@ export type GenerateQuestionPaperRequest = {
   dueDate?: string;
 };
 
+export type JobStatus = "PENDING" | "GENERATING" | "COMPLETED" | "FAILED";
+
+export type StartGenerationResponse = {
+  jobId: string;
+  status: JobStatus;
+};
+
+export type JobStatusResponse = {
+  jobId: string;
+  status: JobStatus;
+  progress?: number;
+  questionPaper?: QuestionPaper;
+  model?: string;
+  error?: string;
+};
+
 export type GenerateQuestionPaperResponse = {
   questionPaper: QuestionPaper;
   model: string;

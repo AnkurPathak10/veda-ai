@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { CACHE_KEYS, CACHE_TTL, cacheGet, cacheSet } from "./cache.js";
 
 const MAX_SOURCE_CHARS = 14_000;
 
@@ -7,6 +8,13 @@ export async function extractTextFromUpload(
   filename: string,
   mimeType: string,
 ): Promise<string> {
+  const cacheKey = CACHE_KEYS.extractedText(filename);
+  const cached = await cacheGet<string>(cacheKey);
+
+  if (cached) {
+    return cached;
+  }
+
   const filePath = path.join(process.cwd(), "uploads", filename);
   const buffer = await fs.readFile(filePath);
 
@@ -32,9 +40,12 @@ export async function extractTextFromUpload(
     );
   }
 
-  if (normalized.length <= MAX_SOURCE_CHARS) {
-    return normalized;
-  }
+  const result =
+    normalized.length <= MAX_SOURCE_CHARS
+      ? normalized
+      : `${normalized.slice(0, MAX_SOURCE_CHARS)}\n\n[Source truncated for length]`;
 
-  return `${normalized.slice(0, MAX_SOURCE_CHARS)}\n\n[Source truncated for length]`;
+  await cacheSet(cacheKey, result, CACHE_TTL.EXTRACTED_TEXT);
+
+  return result;
 }
