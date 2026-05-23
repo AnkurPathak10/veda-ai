@@ -17,6 +17,7 @@ import { generateQuestionPaper } from "@/lib/create-assignment/generate-question
 import { useSpeechRecognition } from "@/lib/speech-recognition/use-speech-recognition";
 import {
   getAssignmentTotals,
+  resetCreateAssignmentStore,
   useCreateAssignmentStore,
 } from "@/stores/create-assignment-store";
 import { useToastStore } from "@/stores/toast-store";
@@ -45,7 +46,6 @@ export function CreateAssignmentForm() {
   const setQuestionPaper = useCreateAssignmentStore((s) => s.setQuestionPaper);
   const setIsSaving = useCreateAssignmentStore((s) => s.setIsSaving);
   const setSaveError = useCreateAssignmentStore((s) => s.setSaveError);
-  const reset = useCreateAssignmentStore((s) => s.reset);
   const addQuestionRow = useCreateAssignmentStore((s) => s.addQuestionRow);
   const removeQuestionRow = useCreateAssignmentStore((s) => s.removeQuestionRow);
   const updateQuestionRow = useCreateAssignmentStore((s) => s.updateQuestionRow);
@@ -106,6 +106,7 @@ export function CreateAssignmentForm() {
   const handlePrevious = () => {
     if (step === 2) {
       setStep(1);
+      setQuestionPaper(null);
       setGenerationError(null);
       setSaveError(null);
       return;
@@ -139,7 +140,7 @@ export function CreateAssignmentForm() {
         token,
       );
 
-      reset();
+      resetCreateAssignmentStore();
       showToast("Assignment saved successfully");
       router.push("/");
     } catch (error) {

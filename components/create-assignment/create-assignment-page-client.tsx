@@ -1,12 +1,16 @@
 "use client";
 
-import { useEffect } from "react";
+import { useLayoutEffect } from "react";
 import { CreateAssignmentForm } from "@/components/create-assignment/create-assignment-form";
-import { useCreateAssignmentStore } from "@/stores/create-assignment-store";
+import {
+  resetCreateAssignmentStore,
+  useCreateAssignmentStore,
+} from "@/stores/create-assignment-store";
 
 export function CreateAssignmentHydration() {
-  useEffect(() => {
-    void useCreateAssignmentStore.persist.rehydrate();
+  useLayoutEffect(() => {
+    resetCreateAssignmentStore();
+    useCreateAssignmentStore.getState().setHasHydrated(true);
   }, []);
 
   return null;

@@ -223,6 +223,7 @@ export const useCreateAssignmentStore = create<CreateAssignmentState>()(
     {
       name: "vedaai-create-assignment",
       storage: createJSONStorage(() => localStorage),
+      skipHydration: true,
       partialize: (state) => ({
         step: state.step,
         uploadedFile: state.uploadedFile,
@@ -231,9 +232,11 @@ export const useCreateAssignmentStore = create<CreateAssignmentState>()(
         additionalInfo: state.additionalInfo,
         questionPaper: state.questionPaper,
       }),
-      onRehydrateStorage: () => (state) => {
-        state?.setHasHydrated(true);
-      },
     },
   ),
 );
+
+export function resetCreateAssignmentStore() {
+  useCreateAssignmentStore.getState().reset();
+  void useCreateAssignmentStore.persist.clearStorage();
+}
