@@ -40,6 +40,7 @@ type PersistedCreateAssignmentState = {
   questionRows: QuestionTypeRow[];
   additionalInfo: string;
   questionPaper: QuestionPaper | null;
+  generationInputHash: string | null;
 };
 
 type CreateAssignmentState = PersistedCreateAssignmentState & {
@@ -61,6 +62,7 @@ type CreateAssignmentState = PersistedCreateAssignmentState & {
   setIsGenerating: (value: boolean) => void;
   setGenerationError: (error: string | null) => void;
   setQuestionPaper: (paper: QuestionPaper | null) => void;
+  setGenerationInputHash: (hash: string | null) => void;
   setIsSaving: (value: boolean) => void;
   setSaveError: (error: string | null) => void;
   addQuestionRow: () => void;
@@ -95,6 +97,7 @@ const initialPersistedState: PersistedCreateAssignmentState = {
   questionRows: getDefaultRows(),
   additionalInfo: "",
   questionPaper: null,
+  generationInputHash: null,
 };
 
 export const useCreateAssignmentStore = create<CreateAssignmentState>()(
@@ -121,6 +124,7 @@ export const useCreateAssignmentStore = create<CreateAssignmentState>()(
       setIsGenerating: (value) => set({ isGenerating: value }),
       setGenerationError: (error) => set({ generationError: error }),
       setQuestionPaper: (paper) => set({ questionPaper: paper }),
+      setGenerationInputHash: (hash) => set({ generationInputHash: hash }),
       setIsSaving: (value) => set({ isSaving: value }),
       setSaveError: (error) => set({ saveError: error }),
 
@@ -231,6 +235,7 @@ export const useCreateAssignmentStore = create<CreateAssignmentState>()(
         questionRows: state.questionRows,
         additionalInfo: state.additionalInfo,
         questionPaper: state.questionPaper,
+        generationInputHash: state.generationInputHash,
       }),
     },
   ),

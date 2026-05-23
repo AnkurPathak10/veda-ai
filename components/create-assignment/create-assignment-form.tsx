@@ -15,6 +15,7 @@ import {
 } from "@/components/create-assignment/question-type-rows";
 import { createAssignment } from "@/lib/assignments/api";
 import { generateQuestionPaper } from "@/lib/create-assignment/generate-question-paper";
+import { computeGenerationInputHash } from "@/lib/create-assignment/generation-input-hash";
 import { useSpeechRecognition } from "@/lib/speech-recognition/use-speech-recognition";
 import {
   getAssignmentTotals,
@@ -37,6 +38,9 @@ export function CreateAssignmentForm() {
   const isGenerating = useCreateAssignmentStore((s) => s.isGenerating);
   const generationError = useCreateAssignmentStore((s) => s.generationError);
   const questionPaper = useCreateAssignmentStore((s) => s.questionPaper);
+  const generationInputHash = useCreateAssignmentStore(
+    (s) => s.generationInputHash,
+  );
   const isSaving = useCreateAssignmentStore((s) => s.isSaving);
   const saveError = useCreateAssignmentStore((s) => s.saveError);
   const setStep = useCreateAssignmentStore((s) => s.setStep);
@@ -45,6 +49,9 @@ export function CreateAssignmentForm() {
   const setIsGenerating = useCreateAssignmentStore((s) => s.setIsGenerating);
   const setGenerationError = useCreateAssignmentStore((s) => s.setGenerationError);
   const setQuestionPaper = useCreateAssignmentStore((s) => s.setQuestionPaper);
+  const setGenerationInputHash = useCreateAssignmentStore(
+    (s) => s.setGenerationInputHash,
+  );
   const setIsSaving = useCreateAssignmentStore((s) => s.setIsSaving);
   const setSaveError = useCreateAssignmentStore((s) => s.setSaveError);
   const addQuestionRow = useCreateAssignmentStore((s) => s.addQuestionRow);
@@ -69,10 +76,17 @@ export function CreateAssignmentForm() {
       return;
     }
 
+    const currentInputHash = computeGenerationInputHash({
+      uploadedFile,
+      questionRows,
+      additionalInfo,
+      dueDate,
+    });
+
     setGenerationError(null);
     setStep(2);
 
-    if (questionPaper) {
+    if (questionPaper && generationInputHash === currentInputHash) {
       return;
     }
 
@@ -103,6 +117,7 @@ export function CreateAssignmentForm() {
       );
 
       setQuestionPaper(result.questionPaper);
+      setGenerationInputHash(currentInputHash);
     } catch (error) {
       setGenerationError(
         error instanceof Error
@@ -110,6 +125,7 @@ export function CreateAssignmentForm() {
           : "Failed to generate question paper",
       );
       setQuestionPaper(null);
+      setGenerationInputHash(null);
     } finally {
       setIsGenerating(false);
       setGenerationProgress(null);
@@ -119,7 +135,6 @@ export function CreateAssignmentForm() {
   const handlePrevious = () => {
     if (step === 2) {
       setStep(1);
-      setQuestionPaper(null);
       setGenerationError(null);
       setSaveError(null);
       return;

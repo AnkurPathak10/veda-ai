@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2, Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react";
 
 type GenerationLoadingProps = {
   progress?: number | null;
@@ -11,11 +11,14 @@ export function GenerationLoading({ progress = null }: GenerationLoadingProps) {
 
   return (
     <div className="flex min-h-[420px] flex-col items-center justify-center px-4 py-16 text-center">
-      <div className="relative mb-6">
-        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#1a1a1a]">
+      <div className="relative mb-6 flex h-20 w-20 items-center justify-center">
+        <div
+          aria-hidden
+          className="absolute h-16 w-16 rounded-2xl bg-[#1a1a1a]/25 animate-ai-glow"
+        />
+        <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-[#1a1a1a] animate-ai-breathe shadow-[0_8px_24px_rgba(26,26,26,0.18)]">
           <Sparkles className="h-8 w-8 text-[#facc15]" />
         </div>
-        <Loader2 className="absolute -right-1 -bottom-1 h-6 w-6 animate-spin text-[#6b7280]" />
       </div>
       <h2 className="text-lg font-bold text-[#1a1a1a]">
         Generating your question paper
