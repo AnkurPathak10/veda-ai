@@ -2,7 +2,13 @@
 
 import { Loader2, Sparkles } from "lucide-react";
 
-export function GenerationLoading() {
+type GenerationLoadingProps = {
+  progress?: number | null;
+};
+
+export function GenerationLoading({ progress = null }: GenerationLoadingProps) {
+  const showProgress = typeof progress === "number";
+
   return (
     <div className="flex min-h-[420px] flex-col items-center justify-center px-4 py-16 text-center">
       <div className="relative mb-6">
@@ -18,6 +24,19 @@ export function GenerationLoading() {
         AI is reading your document and preparing sections, questions, and an
         answer key. This may take a minute.
       </p>
+      {showProgress ? (
+        <div className="mt-6 w-full max-w-xs">
+          <div className="mb-2 text-sm font-medium text-[#1a1a1a]">
+            {Math.round(progress)}% complete
+          </div>
+          <div className="h-2 overflow-hidden rounded-full bg-[#e5e7eb]">
+            <div
+              className="h-full rounded-full bg-[#1a1a1a] transition-all duration-500"
+              style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
+            />
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

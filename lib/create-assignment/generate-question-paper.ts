@@ -1,3 +1,6 @@
+"use client";
+
+import { subscribeToJobEvents } from "./job-socket";
 import { API_BASE_URL } from "./constants";
 import type {
   GenerateQuestionPaperRequest,
@@ -49,34 +52,103 @@ export async function getJobStatus(jobId: string): Promise<JobStatusResponse> {
   return data;
 }
 
-export async function generateQuestionPaper(
-  payload: GenerateQuestionPaperRequest,
+type GenerateOptions = {
+  onProgress?: (progress: number) => void;
+};
+
+async function waitForJobCompletion(
+  jobId: string,
+  options?: GenerateOptions,
 ): Promise<GenerateQuestionPaperResponse> {
-  const { jobId } = await startQuestionPaperGeneration(payload);
-  const startedAt = Date.now();
+  return new Promise((resolve, reject) => {
+    let settled = false;
 
-  while (Date.now() - startedAt < MAX_POLL_DURATION_MS) {
-    const job = await getJobStatus(jobId);
-
-    if (job.status === "COMPLETED") {
-      if (!job.questionPaper || !job.model) {
-        throw new Error("Generation completed without a question paper");
+    const finish = (action: () => void) => {
+      if (settled) {
+        return;
       }
 
-      return {
-        questionPaper: job.questionPaper,
-        model: job.model,
-      };
-    }
+      settled = true;
+      clearTimeout(timeoutId);
+      clearInterval(pollIntervalId);
+      unsubscribe();
+      action();
+    };
 
-    if (job.status === "FAILED") {
-      throw new Error(job.error ?? "Failed to generate question paper");
-    }
+    const unsubscribe = subscribeToJobEvents(jobId, {
+      onProgress: (event) => {
+        if (typeof event.progress === "number") {
+          options?.onProgress?.(event.progress);
+        }
+      },
+      onComplete: (event) => {
+        finish(() => {
+          resolve({
+            questionPaper: event.questionPaper,
+            model: event.model,
+          });
+        });
+      },
+      onFailed: (event) => {
+        finish(() => {
+          reject(new Error(event.error));
+        });
+      },
+    });
 
-    await sleep(POLL_INTERVAL_MS);
-  }
+    const pollIntervalId = setInterval(() => {
+      void (async () => {
+        try {
+          const job = await getJobStatus(jobId);
 
-  throw new Error(
-    "Question paper generation timed out. Please try again in a moment.",
-  );
+          if (typeof job.progress === "number") {
+            options?.onProgress?.(job.progress);
+          }
+
+          if (job.status === "COMPLETED") {
+            if (!job.questionPaper || !job.model) {
+              finish(() => {
+                reject(new Error("Generation completed without a question paper"));
+              });
+              return;
+            }
+
+            finish(() => {
+              resolve({
+                questionPaper: job.questionPaper!,
+                model: job.model!,
+              });
+            });
+            return;
+          }
+
+          if (job.status === "FAILED") {
+            finish(() => {
+              reject(new Error(job.error ?? "Failed to generate question paper"));
+            });
+          }
+        } catch {
+          // Ignore transient polling errors; WebSocket or a later poll may succeed.
+        }
+      })();
+    }, POLL_INTERVAL_MS);
+
+    const timeoutId = setTimeout(() => {
+      finish(() => {
+        reject(
+          new Error(
+            "Question paper generation timed out. Please try again in a moment.",
+          ),
+        );
+      });
+    }, MAX_POLL_DURATION_MS);
+  });
+}
+
+export async function generateQuestionPaper(
+  payload: GenerateQuestionPaperRequest,
+  options?: GenerateOptions,
+): Promise<GenerateQuestionPaperResponse> {
+  const { jobId } = await startQuestionPaperGeneration(payload);
+  return waitForJobCompletion(jobId, options);
 }

@@ -22,6 +22,7 @@ import {
   uploadMiddleware,
 } from "./routes/uploads.js";
 import { closeQuestionPaperQueue } from "./queues/question-paper-queue.js";
+import { registerSocketHandlers, setSocketServer } from "./lib/socket.js";
 import {
   closeQuestionPaperWorker,
   startQuestionPaperWorker,
@@ -147,11 +148,8 @@ app.get("/health", async (_req, res) => {
   }
 });
 
-io.on("connection", (socket) => {
-  socket.on("disconnect", () => {
-    // WebSocket handlers will be added during feature implementation.
-  });
-});
+setSocketServer(io);
+registerSocketHandlers(io);
 
 async function start() {
   try {

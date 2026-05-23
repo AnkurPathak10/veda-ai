@@ -3,6 +3,7 @@
 import { useAuth } from "@clerk/nextjs";
 import { ArrowLeft, ArrowRight, Loader2, Mic } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { FileUploadZone } from "@/components/create-assignment/file-upload-zone";
 import { DueDatePicker } from "@/components/create-assignment/due-date-picker";
 import { GenerationLoading } from "@/components/create-assignment/generation-loading";
@@ -50,6 +51,9 @@ export function CreateAssignmentForm() {
   const removeQuestionRow = useCreateAssignmentStore((s) => s.removeQuestionRow);
   const updateQuestionRow = useCreateAssignmentStore((s) => s.updateQuestionRow);
   const validate = useCreateAssignmentStore((s) => s.validate);
+  const [generationProgress, setGenerationProgress] = useState<number | null>(
+    null,
+  );
 
   const { totalQuestions, totalMarks } = getAssignmentTotals(questionRows);
 
@@ -73,22 +77,30 @@ export function CreateAssignmentForm() {
     }
 
     setIsGenerating(true);
+    setGenerationProgress(0);
 
     try {
-      const result = await generateQuestionPaper({
-        uploadedFile: {
-          filename: uploadedFile.filename,
-          originalName: uploadedFile.originalName,
-          mimeType: uploadedFile.mimeType,
+      const result = await generateQuestionPaper(
+        {
+          uploadedFile: {
+            filename: uploadedFile.filename,
+            originalName: uploadedFile.originalName,
+            mimeType: uploadedFile.mimeType,
+          },
+          questionRows: questionRows.map(({ type, count, marks }) => ({
+            type,
+            count,
+            marks,
+          })),
+          additionalInfo: additionalInfo.trim() || undefined,
+          dueDate: dueDate || undefined,
         },
-        questionRows: questionRows.map(({ type, count, marks }) => ({
-          type,
-          count,
-          marks,
-        })),
-        additionalInfo: additionalInfo.trim() || undefined,
-        dueDate: dueDate || undefined,
-      });
+        {
+          onProgress: (progress) => {
+            setGenerationProgress(progress);
+          },
+        },
+      );
 
       setQuestionPaper(result.questionPaper);
     } catch (error) {
@@ -100,6 +112,7 @@ export function CreateAssignmentForm() {
       setQuestionPaper(null);
     } finally {
       setIsGenerating(false);
+      setGenerationProgress(null);
     }
   };
 
@@ -351,7 +364,9 @@ export function CreateAssignmentForm() {
           </div>
         ) : (
           <div className="mt-6 lg:mt-8">
-            {isGenerating && <GenerationLoading />}
+            {isGenerating && (
+              <GenerationLoading progress={generationProgress} />
+            )}
 
             {!isGenerating && generationError && (
               <div className="rounded-2xl border border-[#fecaca] bg-[#fef2f2] px-5 py-4 text-sm text-[#b91c1c]">
