@@ -13,6 +13,7 @@ import {
   handleListAssignments,
 } from "./routes/assignments.js";
 import { handleGenerateQuestionPaper } from "./routes/generate-question-paper.js";
+import { handleTranscribeSpeech } from "./routes/speech.js";
 import {
   handleUpload,
   handleUploadError,
@@ -30,6 +31,15 @@ const io = new Server(httpServer, {
 const PORT = process.env.PORT ?? 4000;
 
 app.use(cors({ origin: process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000" }));
+
+app.post(
+  "/api/speech/transcribe",
+  express.json({ limit: "10mb" }),
+  (req, res) => {
+    void handleTranscribeSpeech(req, res);
+  },
+);
+
 app.use(express.json());
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
@@ -73,6 +83,7 @@ app.get("/", async (_req, res) => {
         health: "/health",
         uploads: "/api/uploads",
         generate: "/api/assignments/generate",
+        speech: "/api/speech/transcribe",
         assignments: "/api/assignments",
       },
     });
@@ -84,6 +95,7 @@ app.get("/", async (_req, res) => {
         health: "/health",
         uploads: "/api/uploads",
         generate: "/api/assignments/generate",
+        speech: "/api/speech/transcribe",
         assignments: "/api/assignments",
       },
     });

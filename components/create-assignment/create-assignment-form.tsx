@@ -14,6 +14,7 @@ import {
 } from "@/components/create-assignment/question-type-rows";
 import { createAssignment } from "@/lib/assignments/api";
 import { generateQuestionPaper } from "@/lib/create-assignment/generate-question-paper";
+import { useSpeechRecognition } from "@/lib/speech-recognition/use-speech-recognition";
 import {
   getAssignmentTotals,
   useCreateAssignmentStore,
@@ -51,6 +52,13 @@ export function CreateAssignmentForm() {
   const validate = useCreateAssignmentStore((s) => s.validate);
 
   const { totalQuestions, totalMarks } = getAssignmentTotals(questionRows);
+
+  const { isListening, isTranscribing, isSupported, toggle: toggleSpeechRecognition } =
+    useSpeechRecognition({
+      value: additionalInfo,
+      onChange: setAdditionalInfo,
+      onError: (message) => showToast(message, "error"),
+    });
 
   const handleNext = async () => {
     if (!validate() || !uploadedFile || isGenerating) {
@@ -297,10 +305,45 @@ export function CreateAssignmentForm() {
                     placeholder="e.g Generate a question paper for 3 hour exam duration..."
                     className="w-full resize-none rounded-2xl border border-[#e5e7eb] bg-white px-4 py-3 pr-12 text-sm text-[#1a1a1a] outline-none transition-colors placeholder:text-[#9ca3af] focus:border-[#1a1a1a]"
                   />
-                  <Mic
-                    className="pointer-events-none absolute bottom-3 right-3 h-5 w-5 text-[#9ca3af]"
-                    strokeWidth={1.75}
-                  />
+                  <button
+                    type="button"
+                    onClick={toggleSpeechRecognition}
+                    disabled={!isSupported || isTranscribing}
+                    aria-label={
+                      isTranscribing
+                        ? "Transcribing speech"
+                        : isListening
+                          ? "Stop voice input"
+                          : "Start voice input"
+                    }
+                    aria-pressed={isListening}
+                    title={
+                      !isSupported
+                        ? "Voice input works in Chrome, Edge, and Brave"
+                        : isTranscribing
+                          ? "Transcribing speech..."
+                          : isListening
+                            ? "Stop listening"
+                            : "Speak to type"
+                    }
+                    className={`absolute bottom-2 right-2 flex h-9 w-9 items-center justify-center rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+                      isListening || isTranscribing
+                        ? "bg-[#fef2f2] text-[#ef4444] hover:bg-[#fee2e2]"
+                        : "text-[#9ca3af] hover:bg-[#f3f4f6] hover:text-[#1a1a1a]"
+                    }`}
+                  >
+                    {isTranscribing ? (
+                      <Loader2
+                        className="h-5 w-5 animate-spin"
+                        strokeWidth={1.75}
+                      />
+                    ) : (
+                      <Mic
+                        className={`h-5 w-5 ${isListening ? "animate-pulse" : ""}`}
+                        strokeWidth={1.75}
+                      />
+                    )}
+                  </button>
                 </div>
               </div>
             </div>
