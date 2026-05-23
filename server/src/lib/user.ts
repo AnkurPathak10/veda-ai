@@ -12,14 +12,14 @@ export async function findOrCreateUser(profile: ClerkUserProfile) {
   return prisma.user.upsert({
     where: { clerkId: profile.clerkId },
     update: {
-      email: profile.email ?? undefined,
+      email: profile.email?.toLowerCase() ?? undefined,
       firstName: profile.firstName ?? undefined,
       lastName: profile.lastName ?? undefined,
       imageUrl: profile.imageUrl ?? undefined,
     },
     create: {
       clerkId: profile.clerkId,
-      email: profile.email ?? undefined,
+      email: profile.email?.toLowerCase() ?? undefined,
       firstName: profile.firstName ?? undefined,
       lastName: profile.lastName ?? undefined,
       imageUrl: profile.imageUrl ?? undefined,

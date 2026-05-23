@@ -13,6 +13,7 @@ import {
 import { VedaLogo } from "./veda-logo";
 import { fetchAssignments } from "@/lib/assignments/api";
 import { useAssignmentsStore } from "@/stores/assignments-store";
+import { useUserSettingsStore } from "@/stores/user-settings-store";
 
 type SidebarProps = {
   onNavigate?: () => void;
@@ -37,9 +38,11 @@ export function Sidebar({ onNavigate, showClose, onClose }: SidebarProps) {
   const { getToken } = useAuth();
   const assignmentCount = useAssignmentsStore((s) => s.total);
   const setAssignments = useAssignmentsStore((s) => s.setAssignments);
+  const schoolName = useUserSettingsStore((s) => s.settings?.schoolName);
+  const schoolLocation = useUserSettingsStore((s) => s.settings?.schoolLocation);
 
   useEffect(() => {
-    async function loadCount() {
+    async function loadAssignmentCount() {
       try {
         const token = await getToken();
         const data = await fetchAssignments(token);
@@ -49,7 +52,7 @@ export function Sidebar({ onNavigate, showClose, onClose }: SidebarProps) {
       }
     }
 
-    void loadCount();
+    void loadAssignmentCount();
   }, [getToken, pathname, setAssignments]);
 
   return (
@@ -129,9 +132,11 @@ export function Sidebar({ onNavigate, showClose, onClose }: SidebarProps) {
           </div>
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold text-[#1a1a1a]">
-              Delhi Public School
+              {schoolName || "Your School"}
             </p>
-            <p className="truncate text-xs text-[#6b7280]">Bokaro Steel City</p>
+            <p className="truncate text-xs text-[#6b7280]">
+              {schoolLocation || "Set location in Settings"}
+            </p>
           </div>
         </div>
       </div>

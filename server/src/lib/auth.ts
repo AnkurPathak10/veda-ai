@@ -1,4 +1,4 @@
-import { verifyToken } from "@clerk/backend";
+import { createClerkClient, verifyToken } from "@clerk/backend";
 import type { NextFunction, Request, Response } from "express";
 import { findOrCreateUser } from "./user.js";
 
@@ -6,6 +6,10 @@ export type AuthenticatedRequest = Request & {
   clerkUserId: string;
   dbUserId: string;
 };
+
+const clerk = createClerkClient({
+  secretKey: process.env.CLERK_SECRET_KEY,
+});
 
 export async function requireBearerAuth(
   req: Request,
@@ -33,7 +37,15 @@ export async function requireBearerAuth(
       return;
     }
 
-    const user = await findOrCreateUser({ clerkId: clerkUserId });
+    const clerkUser = await clerk.users.getUser(clerkUserId);
+
+    const user = await findOrCreateUser({
+      clerkId: clerkUserId,
+      email: clerkUser.emailAddresses[0]?.emailAddress ?? null,
+      firstName: clerkUser.firstName,
+      lastName: clerkUser.lastName,
+      imageUrl: clerkUser.imageUrl,
+    });
     const authenticatedRequest = req as AuthenticatedRequest;
     authenticatedRequest.clerkUserId = clerkUserId;
     authenticatedRequest.dbUserId = user.id;

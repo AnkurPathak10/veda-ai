@@ -41,10 +41,14 @@ export const CACHE_TTL = {
   EXTRACTED_TEXT: 86_400,
   QUESTION_PAPER: 604_800,
   ASSIGNMENTS_LIST: 60,
+  NOTIFICATIONS_LIST: 30,
 } as const;
 
 export const CACHE_KEYS = {
   extractedText: (filename: string) => `extracted-text:${filename}`,
   questionPaper: (hash: string) => `question-paper:${hash}`,
   assignmentsList: (userId: string) => `assignments:list:${userId}`,
+  notificationsList: (userId: string) => `notifications:list:${userId}`,
+  notificationsUnreadCount: (userId: string) =>
+    `notifications:unread:${userId}`,
 } as const;

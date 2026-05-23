@@ -1,5 +1,6 @@
 "use client";
 
+import { useAuth } from "@clerk/nextjs";
 import { useEffect, useState } from "react";
 import { DashboardNavbar } from "./dashboard-navbar";
 import { MobileBottomNav } from "./mobile-bottom-nav";
@@ -7,9 +8,42 @@ import { MobileFab } from "./mobile-fab";
 import { Sidebar } from "./sidebar";
 import { ToastProvider } from "@/components/ui/toast-provider";
 
+import { fetchUserSettings } from "@/lib/users/api";
+import { useUserSettingsStore } from "@/stores/user-settings-store";
+
 type DashboardShellProps = {
   children: React.ReactNode;
 };
+
+function UserSettingsLoader() {
+  const { getToken, isSignedIn } = useAuth();
+  const setSettings = useUserSettingsStore((s) => s.setSettings);
+  const setLoading = useUserSettingsStore((s) => s.setLoading);
+
+  useEffect(() => {
+    if (!isSignedIn) {
+      return;
+    }
+
+    async function loadSettings() {
+      setLoading(true);
+
+      try {
+        const token = await getToken();
+        const data = await fetchUserSettings(token);
+        setSettings(data.user);
+      } catch {
+        // Settings are optional for shell rendering.
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    void loadSettings();
+  }, [getToken, isSignedIn, setLoading, setSettings]);
+
+  return null;
+}
 
 export function DashboardShell({ children }: DashboardShellProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -23,6 +57,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
 
   return (
     <div className="min-h-screen bg-[#ebebeb] p-2 sm:p-3 lg:p-4">
+      <UserSettingsLoader />
       <div className="mx-auto flex min-h-[calc(100vh-1rem)] max-w-[1600px] gap-3 lg:min-h-[calc(100vh-2rem)] lg:gap-4">
         {/* Desktop sidebar */}
         <div className="hidden shrink-0 lg:block">

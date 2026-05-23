@@ -9,16 +9,22 @@ datasource db {
 
 // Synced from Clerk on first sign-in or via webhook
 model User {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  clerkId   String   @unique
-  email     String?
-  firstName String?
-  lastName  String?
-  imageUrl  String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  clerkId        String   @unique
+  email          String?
+  firstName      String?
+  lastName       String?
+  imageUrl       String?
+  schoolName     String?
+  schoolLocation String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  assignments Assignment[]
+  assignments       Assignment[]
+  notifications     Notification[]
+  groupMembers      GroupMember[]
+  groupsCreated     Group[]            @relation("GroupCreator")
+  sharedAssignments SharedAssignment[]
 }
 
 model Assignment {
@@ -35,7 +41,8 @@ model Assignment {
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
 
-  questionPapers QuestionPaper[]
+  questionPapers    QuestionPaper[]
+  sharedInGroups    SharedAssignment[]
 }
 
 model QuestionPaper {
@@ -49,6 +56,52 @@ model QuestionPaper {
   updatedAt    DateTime            @updatedAt
 }
 
+model Notification {
+  id        String           @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String           @db.ObjectId
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType @default(INFO)
+  title     String
+  message   String
+  href      String?
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+}
+
+model Group {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  description String?
+  createdById String   @db.ObjectId
+  createdBy   User     @relation("GroupCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  members           GroupMember[]
+  sharedAssignments SharedAssignment[]
+}
+
+model GroupMember {
+  id       String          @id @default(auto()) @map("_id") @db.ObjectId
+  groupId  String          @db.ObjectId
+  group    Group           @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  userId   String          @db.ObjectId
+  user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role     GroupMemberRole @default(MEMBER)
+  joinedAt DateTime        @default(now())
+}
+
+model SharedAssignment {
+  id           String     @id @default(auto()) @map("_id") @db.ObjectId
+  groupId      String     @db.ObjectId
+  group        Group      @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  assignmentId String     @db.ObjectId
+  assignment   Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  sharedById   String     @db.ObjectId
+  sharedBy     User       @relation(fields: [sharedById], references: [id], onDelete: Cascade)
+  sharedAt     DateTime   @default(now())
+}
+
 enum AssignmentStatus {
   DRAFT
   ACTIVE
@@ -60,4 +113,15 @@ enum QuestionPaperStatus {
   GENERATING
   COMPLETED
   FAILED
+}
+
+enum NotificationType {
+  SUCCESS
+  ERROR
+  INFO
+}
+
+enum GroupMemberRole {
+  OWNER
+  MEMBER
 }

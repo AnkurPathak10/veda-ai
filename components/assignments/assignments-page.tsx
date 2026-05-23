@@ -1,14 +1,21 @@
 "use client";
 
 import { useAuth } from "@clerk/nextjs";
-import { Filter, Loader2, Search, Sparkles } from "lucide-react";
+import { Loader2, Search, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AssignmentCard } from "@/components/assignments/assignment-card";
+import { AssignmentFilterDropdown } from "@/components/assignments/assignment-filter-dropdown";
 import { DeleteAssignmentDialog } from "@/components/assignments/delete-assignment-dialog";
 import { EmptyAssignmentsState } from "@/components/dashboard/empty-assignments-state";
 import { CREATE_ASSIGNMENT_HREF } from "@/components/dashboard/nav-items";
 import { deleteAssignment, fetchAssignments } from "@/lib/assignments/api";
+import {
+  DEFAULT_ASSIGNMENT_FILTERS,
+  filterAndSortAssignments,
+  type AssignmentFilters,
+} from "@/lib/assignments/filter-assignments";
+import { refreshNotificationsStore } from "@/lib/notifications/refresh";
 import type { AssignmentListItem } from "@/lib/assignments/types";
 import { useAssignmentsStore } from "@/stores/assignments-store";
 import { useToastStore } from "@/stores/toast-store";
@@ -26,6 +33,9 @@ export function AssignmentsPage() {
   const showToast = useToastStore((s) => s.show);
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [filters, setFilters] = useState<AssignmentFilters>(
+    DEFAULT_ASSIGNMENT_FILTERS,
+  );
   const [assignmentToDelete, setAssignmentToDelete] =
     useState<AssignmentListItem | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -53,16 +63,10 @@ export function AssignmentsPage() {
     void loadAssignments();
   }, [loadAssignments]);
 
-  const filteredAssignments = useMemo(() => {
-    const query = searchQuery.trim().toLowerCase();
-    if (!query) {
-      return assignments;
-    }
-
-    return assignments.filter((assignment) =>
-      assignment.title.toLowerCase().includes(query),
-    );
-  }, [assignments, searchQuery]);
+  const filteredAssignments = useMemo(
+    () => filterAndSortAssignments(assignments, searchQuery, filters),
+    [assignments, searchQuery, filters],
+  );
 
   const handleDeleteConfirm = async () => {
     if (!assignmentToDelete) {
@@ -76,6 +80,7 @@ export function AssignmentsPage() {
       await deleteAssignment(assignmentToDelete.id, token);
       removeAssignmentFromStore(assignmentToDelete.id);
       showToast("Assignment deleted successfully");
+      await refreshNotificationsStore(getToken);
       setAssignmentToDelete(null);
     } catch (deleteError) {
       showToast(
@@ -144,14 +149,10 @@ export function AssignmentsPage() {
 
           {/* Search & filter */}
           <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between lg:mt-8">
-            <button
-              type="button"
-              className="inline-flex items-center gap-2 rounded-full border border-[#e5e7eb] bg-white px-4 py-2.5 text-sm font-medium text-[#374151] lg:px-5"
-            >
-              <Filter className="h-4 w-4" />
-              <span className="lg:hidden">Filter</span>
-              <span className="hidden lg:inline">Filter By</span>
-            </button>
+            <AssignmentFilterDropdown
+              filters={filters}
+              onChange={setFilters}
+            />
 
             <label className="relative block w-full sm:max-w-xs lg:max-w-sm">
               <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9ca3af]" />
@@ -167,7 +168,7 @@ export function AssignmentsPage() {
 
           {filteredAssignments.length === 0 ? (
             <div className="mt-10 text-center text-sm text-[#6b7280]">
-              No assignments match your search.
+              No assignments match your search or filters.
             </div>
           ) : (
             <div className="mt-6 grid grid-cols-1 gap-4 lg:mt-8 lg:grid-cols-2 lg:gap-5">

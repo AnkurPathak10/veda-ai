@@ -13,9 +13,29 @@ import {
   handleGetAssignment,
   handleListAssignments,
 } from "./routes/assignments.js";
+import {
+  handleAddGroupMember,
+  handleCreateGroup,
+  handleGetGroup,
+  handleLeaveGroup,
+  handleListGroups,
+  handleRemoveGroupMember,
+  handleShareAssignmentToGroup,
+} from "./routes/groups.js";
 import { handleGenerateQuestionPaper } from "./routes/generate-question-paper.js";
 import { handleGetJobStatus } from "./routes/jobs.js";
+import {
+  handleCreateNotification,
+  handleListNotifications,
+  handleMarkAllNotificationsRead,
+  handleMarkNotificationRead,
+} from "./routes/notifications.js";
 import { handleTranscribeSpeech } from "./routes/speech.js";
+import {
+  handleGetUserSettings,
+  handleSearchUsers,
+  handleUpdateUserSettings,
+} from "./routes/users.js";
 import {
   handleUpload,
   handleUploadError,
@@ -83,6 +103,62 @@ app.get("/api/assignments/:id", requireBearerAuth, (req, res) => {
 
 app.delete("/api/assignments/:id", requireBearerAuth, (req, res) => {
   void handleDeleteAssignment(req, res);
+});
+
+app.get("/api/notifications", requireBearerAuth, (req, res) => {
+  void handleListNotifications(req, res);
+});
+
+app.post("/api/notifications", requireBearerAuth, (req, res) => {
+  void handleCreateNotification(req, res);
+});
+
+app.patch("/api/notifications/read-all", requireBearerAuth, (req, res) => {
+  void handleMarkAllNotificationsRead(req, res);
+});
+
+app.patch("/api/notifications/:id/read", requireBearerAuth, (req, res) => {
+  void handleMarkNotificationRead(req, res);
+});
+
+app.get("/api/users/me", requireBearerAuth, (req, res) => {
+  void handleGetUserSettings(req, res);
+});
+
+app.patch("/api/users/me", requireBearerAuth, (req, res) => {
+  void handleUpdateUserSettings(req, res);
+});
+
+app.get("/api/users/search", requireBearerAuth, (req, res) => {
+  void handleSearchUsers(req, res);
+});
+
+app.get("/api/groups", requireBearerAuth, (req, res) => {
+  void handleListGroups(req, res);
+});
+
+app.post("/api/groups", requireBearerAuth, (req, res) => {
+  void handleCreateGroup(req, res);
+});
+
+app.get("/api/groups/:id", requireBearerAuth, (req, res) => {
+  void handleGetGroup(req, res);
+});
+
+app.post("/api/groups/:id/members", requireBearerAuth, (req, res) => {
+  void handleAddGroupMember(req, res);
+});
+
+app.delete("/api/groups/:id/members/:memberId", requireBearerAuth, (req, res) => {
+  void handleRemoveGroupMember(req, res);
+});
+
+app.post("/api/groups/:id/share", requireBearerAuth, (req, res) => {
+  void handleShareAssignmentToGroup(req, res);
+});
+
+app.delete("/api/groups/:id/leave", requireBearerAuth, (req, res) => {
+  void handleLeaveGroup(req, res);
 });
 
 app.get("/", async (_req, res) => {

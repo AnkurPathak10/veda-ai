@@ -16,6 +16,8 @@ import {
 import { createAssignment } from "@/lib/assignments/api";
 import { generateQuestionPaper } from "@/lib/create-assignment/generate-question-paper";
 import { computeGenerationInputHash } from "@/lib/create-assignment/generation-input-hash";
+import { createNotification } from "@/lib/notifications/api";
+import { refreshNotificationsStore } from "@/lib/notifications/refresh";
 import { useSpeechRecognition } from "@/lib/speech-recognition/use-speech-recognition";
 import {
   getAssignmentTotals,
@@ -118,14 +120,39 @@ export function CreateAssignmentForm() {
 
       setQuestionPaper(result.questionPaper);
       setGenerationInputHash(currentInputHash);
+
+      const token = await getToken();
+      const subject = result.questionPaper.header.subject?.trim();
+      await createNotification(
+        {
+          type: "SUCCESS",
+          title: "Question paper generated",
+          message: subject
+            ? `Your question paper for ${subject} is ready to preview`
+            : "Your question paper is ready to preview",
+        },
+        token,
+      );
+      await refreshNotificationsStore(getToken);
     } catch (error) {
-      setGenerationError(
+      const message =
         error instanceof Error
           ? error.message
-          : "Failed to generate question paper",
-      );
+          : "Failed to generate question paper";
+      setGenerationError(message);
       setQuestionPaper(null);
       setGenerationInputHash(null);
+
+      const token = await getToken();
+      await createNotification(
+        {
+          type: "ERROR",
+          title: "Generation failed",
+          message,
+        },
+        token,
+      );
+      await refreshNotificationsStore(getToken);
     } finally {
       setIsGenerating(false);
       setGenerationProgress(null);
@@ -170,6 +197,7 @@ export function CreateAssignmentForm() {
 
       resetCreateAssignmentStore();
       showToast("Assignment saved successfully");
+      await refreshNotificationsStore(getToken);
       router.push("/");
     } catch (error) {
       const message =

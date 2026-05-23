@@ -8,8 +8,10 @@ import {
   cacheGet,
   cacheSet,
 } from "../lib/cache.js";
+import { createNotification } from "../lib/notifications.js";
 import { prisma } from "../lib/prisma.js";
 import { questionPaperSchema } from "../lib/question-paper-schema.js";
+import { canAccessAssignment } from "./groups.js";
 
 const uploadedFileSchema = z.object({
   id: z.string(),
@@ -164,6 +166,14 @@ export async function handleCreateAssignment(req: Request, res: Response) {
 
     await cacheDel(CACHE_KEYS.assignmentsList(dbUserId));
 
+    await createNotification({
+      userId: dbUserId,
+      type: "SUCCESS",
+      title: "Assignment created",
+      message: `"${assignment.title}" was saved successfully`,
+      href: `/assignments/${assignment.id}`,
+    });
+
     res.status(201).json({
       assignment: {
         id: assignment.id,
@@ -206,8 +216,15 @@ export async function handleGetAssignment(req: Request, res: Response) {
       return;
     }
 
+    const hasAccess = await canAccessAssignment(id, dbUserId);
+
+    if (!hasAccess) {
+      res.status(404).json({ error: "Assignment not found" });
+      return;
+    }
+
     const assignment = await prisma.assignment.findFirst({
-      where: { id, userId: dbUserId },
+      where: { id },
       include: {
         questionPapers: {
           orderBy: { createdAt: "desc" },
@@ -258,7 +275,7 @@ export async function handleDeleteAssignment(req: Request, res: Response) {
 
     const assignment = await prisma.assignment.findFirst({
       where: { id, userId: dbUserId },
-      select: { id: true },
+      select: { id: true, title: true },
     });
 
     if (!assignment) {
@@ -269,6 +286,13 @@ export async function handleDeleteAssignment(req: Request, res: Response) {
     await prisma.assignment.delete({ where: { id } });
 
     await cacheDel(CACHE_KEYS.assignmentsList(dbUserId));
+
+    await createNotification({
+      userId: dbUserId,
+      type: "SUCCESS",
+      title: "Assignment deleted",
+      message: `"${assignment.title}" was deleted`,
+    });
 
     res.json({ success: true });
   } catch (error) {
