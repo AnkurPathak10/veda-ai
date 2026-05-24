@@ -216,14 +216,14 @@ export function HomePage() {
                 <Link
                   key={assignment.id}
                   href={`/assignments/${assignment.id}`}
-                  className={`flex items-center justify-between px-4 py-3.5 transition-colors hover:bg-[#f9fafb] ${
+                  className={`flex items-start justify-between gap-3 px-4 py-3.5 transition-colors hover:bg-[#f9fafb] ${
                     index > 0 ? "border-t border-[#f3f4f6]" : ""
                   }`}
                 >
-                  <span className="text-sm font-medium text-[#1a1a1a]">
+                  <span className="min-w-0 flex-1 text-sm font-medium text-[#1a1a1a]">
                     {assignment.title}
                   </span>
-                  <span className="text-xs text-[#6b7280]">
+                  <span className="shrink-0 whitespace-nowrap text-xs text-[#6b7280]">
                     Due {assignment.dueDate}
                   </span>
                 </Link>

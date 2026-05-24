@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   fetchNotifications,
   markAllNotificationsRead,
@@ -36,7 +36,11 @@ export function NotificationDropdown() {
   const router = useRouter();
   const { getToken } = useAuth();
   const [open, setOpen] = useState(false);
+  const [mobileDropdownTop, setMobileDropdownTop] = useState<number | null>(
+    null,
+  );
   const containerRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
   const notifications = useNotificationsStore((s) => s.notifications);
   const unreadCount = useNotificationsStore((s) => s.unreadCount);
@@ -63,6 +67,34 @@ export function NotificationDropdown() {
   useEffect(() => {
     void loadNotifications();
   }, [loadNotifications]);
+
+  useLayoutEffect(() => {
+    if (!open) {
+      setMobileDropdownTop(null);
+      return;
+    }
+
+    const mobileQuery = window.matchMedia("(max-width: 1023px)");
+
+    function updateMobileDropdownPosition() {
+      if (!buttonRef.current || !mobileQuery.matches) {
+        setMobileDropdownTop(null);
+        return;
+      }
+
+      const { bottom } = buttonRef.current.getBoundingClientRect();
+      setMobileDropdownTop(bottom + 8);
+    }
+
+    updateMobileDropdownPosition();
+    window.addEventListener("resize", updateMobileDropdownPosition);
+    window.addEventListener("scroll", updateMobileDropdownPosition, true);
+
+    return () => {
+      window.removeEventListener("resize", updateMobileDropdownPosition);
+      window.removeEventListener("scroll", updateMobileDropdownPosition, true);
+    };
+  }, [open]);
 
   useEffect(() => {
     if (!open) {
@@ -119,6 +151,7 @@ export function NotificationDropdown() {
   return (
     <div className="relative" ref={containerRef}>
       <button
+        ref={buttonRef}
         type="button"
         onClick={handleOpen}
         className="relative flex h-10 w-10 items-center justify-center rounded-xl text-[#4b5563] transition-colors hover:bg-[#f3f4f6]"
@@ -134,7 +167,12 @@ export function NotificationDropdown() {
       </button>
 
       {open && (
-        <div className="absolute right-0 z-50 mt-2 w-[min(100vw-2rem,360px)] overflow-hidden rounded-2xl border border-[#e5e7eb] bg-white shadow-xl">
+        <div
+          className="absolute right-0 z-50 mt-2 w-[min(100vw-2rem,360px)] overflow-hidden rounded-2xl border border-[#e5e7eb] bg-white shadow-xl max-lg:fixed max-lg:left-4 max-lg:right-4 max-lg:mt-0 max-lg:w-auto"
+          style={
+            mobileDropdownTop !== null ? { top: mobileDropdownTop } : undefined
+          }
+        >
           <div className="flex items-center justify-between border-b border-[#e5e7eb] px-4 py-3">
             <h3 className="text-sm font-semibold text-[#1a1a1a]">
               Notifications
