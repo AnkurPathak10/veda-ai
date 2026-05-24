@@ -24,6 +24,14 @@ import {
 } from "./routes/groups.js";
 import { handleGenerateQuestionPaper } from "./routes/generate-question-paper.js";
 import { handleGetJobStatus } from "./routes/jobs.js";
+import { handleGenerateToolkit } from "./routes/toolkit-generate.js";
+import { handleGetToolkitJobStatus } from "./routes/toolkit-jobs.js";
+import {
+  handleDeleteLibraryItem,
+  handleGetLibraryItem,
+  handleListLibraryItems,
+  handleSaveLibraryItem,
+} from "./routes/library.js";
 import {
   handleCreateNotification,
   handleListNotifications,
@@ -42,11 +50,16 @@ import {
   uploadMiddleware,
 } from "./routes/uploads.js";
 import { closeQuestionPaperQueue } from "./queues/question-paper-queue.js";
+import { closeToolkitQueue } from "./queues/toolkit-queue.js";
 import { registerSocketHandlers, setSocketServer } from "./lib/socket.js";
 import {
   closeQuestionPaperWorker,
   startQuestionPaperWorker,
 } from "./workers/question-paper-worker.js";
+import {
+  closeToolkitWorker,
+  startToolkitWorker,
+} from "./workers/toolkit-worker.js";
 
 const app = express();
 const httpServer = createServer(app);
@@ -87,6 +100,30 @@ app.post("/api/assignments/generate", (req, res) => {
 
 app.get("/api/jobs/:jobId", (req, res) => {
   void handleGetJobStatus(req, res);
+});
+
+app.post("/api/toolkit/generate", (req, res) => {
+  void handleGenerateToolkit(req, res);
+});
+
+app.get("/api/toolkit/jobs/:jobId", (req, res) => {
+  void handleGetToolkitJobStatus(req, res);
+});
+
+app.get("/api/library", requireBearerAuth, (req, res) => {
+  void handleListLibraryItems(req, res);
+});
+
+app.post("/api/library", requireBearerAuth, (req, res) => {
+  void handleSaveLibraryItem(req, res);
+});
+
+app.get("/api/library/:id", requireBearerAuth, (req, res) => {
+  void handleGetLibraryItem(req, res);
+});
+
+app.delete("/api/library/:id", requireBearerAuth, (req, res) => {
+  void handleDeleteLibraryItem(req, res);
 });
 
 app.get("/api/assignments", requireBearerAuth, (req, res) => {
@@ -175,6 +212,8 @@ app.get("/", async (_req, res) => {
         uploads: "/api/uploads",
         generate: "/api/assignments/generate",
         jobs: "/api/jobs/:jobId",
+        toolkit: "/api/toolkit/generate",
+        toolkitJobs: "/api/toolkit/jobs/:jobId",
         speech: "/api/speech/transcribe",
         assignments: "/api/assignments",
       },
@@ -191,6 +230,8 @@ app.get("/", async (_req, res) => {
         uploads: "/api/uploads",
         generate: "/api/assignments/generate",
         jobs: "/api/jobs/:jobId",
+        toolkit: "/api/toolkit/generate",
+        toolkitJobs: "/api/toolkit/jobs/:jobId",
         speech: "/api/speech/transcribe",
         assignments: "/api/assignments",
       },
@@ -240,6 +281,7 @@ async function start() {
     await connectRedis();
     console.log("Connected to Redis");
     startQuestionPaperWorker();
+    startToolkitWorker();
   } catch (error) {
     console.error("Failed to connect to Redis:", error);
     process.exit(1);
@@ -252,7 +294,9 @@ async function start() {
 
 async function shutdown() {
   await closeQuestionPaperWorker();
+  await closeToolkitWorker();
   await closeQuestionPaperQueue();
+  await closeToolkitQueue();
   await closeRedis();
   await prisma.$disconnect();
 }

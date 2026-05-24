@@ -1,32 +1,58 @@
 "use client";
 
 import { useAuth } from "@clerk/nextjs";
-import { FileText, Loader2, Search } from "lucide-react";
+import {
+  BookOpen,
+  ClipboardList,
+  FileText,
+  Layers,
+  Loader2,
+  Search,
+  Trash2,
+} from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { deleteLibraryItem, fetchLibraryItems } from "@/lib/library/api";
+import type { LibraryListItem } from "@/lib/library/types";
 import { formatDisplayDate } from "@/lib/assignments/format-date";
-import { fetchAssignments } from "@/lib/assignments/api";
-import type { AssignmentListItem } from "@/lib/assignments/types";
-import { useAssignmentsStore } from "@/stores/assignments-store";
+import { TOOLKIT_TOOL_LABELS } from "@/lib/toolkit/result-title";
+import type { ToolkitToolId } from "@/lib/toolkit/types";
+import { useToastStore } from "@/stores/toast-store";
+
+const TOOL_ICONS: Record<
+  ToolkitToolId,
+  typeof BookOpen
+> = {
+  "lesson-plan": ClipboardList,
+  worksheet: FileText,
+  "differentiated-papers": Layers,
+  "chapter-summary": BookOpen,
+};
+
+const TOOL_ACCENTS: Record<ToolkitToolId, string> = {
+  "lesson-plan": "bg-[#eff6ff] text-[#2563eb]",
+  worksheet: "bg-[#f0fdf4] text-[#16a34a]",
+  "differentiated-papers": "bg-[#fff7ed] text-[#ea580c]",
+  "chapter-summary": "bg-[#faf5ff] text-[#9333ea]",
+};
 
 export function LibraryPage() {
   const { getToken } = useAuth();
-  const assignments = useAssignmentsStore((s) => s.assignments);
-  const isLoading = useAssignmentsStore((s) => s.isLoading);
-  const error = useAssignmentsStore((s) => s.error);
-  const setAssignments = useAssignmentsStore((s) => s.setAssignments);
-  const setLoading = useAssignmentsStore((s) => s.setLoading);
-  const setError = useAssignmentsStore((s) => s.setError);
+  const showToast = useToastStore((s) => s.show);
+  const [items, setItems] = useState<LibraryListItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const loadAssignments = useCallback(async () => {
-    setLoading(true);
+  const loadLibrary = useCallback(async () => {
+    setIsLoading(true);
     setError(null);
 
     try {
       const token = await getToken();
-      const data = await fetchAssignments(token);
-      setAssignments(data.assignments, data.total);
+      const data = await fetchLibraryItems(token);
+      setItems(data.items);
     } catch (loadError) {
       setError(
         loadError instanceof Error
@@ -34,28 +60,47 @@ export function LibraryPage() {
           : "Failed to load library",
       );
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
-  }, [getToken, setAssignments, setError, setLoading]);
+  }, [getToken]);
 
   useEffect(() => {
-    void loadAssignments();
-  }, [loadAssignments]);
+    void loadLibrary();
+  }, [loadLibrary]);
 
-  const libraryItems = useMemo(() => {
-    const withPapers = assignments.filter(
-      (assignment) => assignment.hasQuestionPaper,
-    );
+  const filteredItems = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
 
     if (!query) {
-      return withPapers;
+      return items;
     }
 
-    return withPapers.filter((assignment) =>
-      assignment.title.toLowerCase().includes(query),
+    return items.filter(
+      (item) =>
+        item.title.toLowerCase().includes(query) ||
+        TOOLKIT_TOOL_LABELS[item.tool].toLowerCase().includes(query),
     );
-  }, [assignments, searchQuery]);
+  }, [items, searchQuery]);
+
+  const handleDelete = async (id: string) => {
+    setDeletingId(id);
+
+    try {
+      const token = await getToken();
+      await deleteLibraryItem(id, token);
+      setItems((current) => current.filter((item) => item.id !== id));
+      showToast("Removed from library");
+    } catch (deleteError) {
+      showToast(
+        deleteError instanceof Error
+          ? deleteError.message
+          : "Failed to delete item",
+        "error",
+      );
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -71,7 +116,7 @@ export function LibraryPage() {
         <p className="text-sm text-[#ef4444]">{error}</p>
         <button
           type="button"
-          onClick={() => void loadAssignments()}
+          onClick={() => void loadLibrary()}
           className="mt-4 rounded-full bg-[#1a1a1a] px-5 py-2.5 text-sm font-semibold text-white"
         >
           Try again
@@ -91,7 +136,8 @@ export function LibraryPage() {
             </h1>
           </div>
           <p className="mt-1 text-sm text-[#6b7280]">
-            Browse your saved question papers and generated assignments.
+            Saved lesson plans, worksheets, differentiated papers, and chapter
+            summaries from AI Teacher&apos;s Toolkit.
           </p>
         </div>
 
@@ -108,28 +154,34 @@ export function LibraryPage() {
           </label>
         </div>
 
-        {libraryItems.length === 0 ? (
+        {filteredItems.length === 0 ? (
           <div className="mt-16 flex flex-col items-center text-center">
             <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#f3f4f6]">
-              <FileText className="h-8 w-8 text-[#9ca3af]" />
+              <BookOpen className="h-8 w-8 text-[#9ca3af]" />
             </div>
             <h2 className="mt-4 text-lg font-semibold text-[#1a1a1a]">
-              No question papers yet
+              No saved toolkit items yet
             </h2>
             <p className="mt-2 max-w-sm text-sm text-[#6b7280]">
-              Create an assignment and generate a question paper to see it here.
+              Generate a lesson plan, worksheet, differentiated paper, or
+              chapter summary and save it to your library.
             </p>
             <Link
-              href="/assignments/create"
+              href="/toolkit"
               className="mt-6 rounded-full bg-[#1a1a1a] px-5 py-2.5 text-sm font-semibold text-white"
             >
-              Create Assignment
+              Open AI Toolkit
             </Link>
           </div>
         ) : (
           <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-5">
-            {libraryItems.map((assignment) => (
-              <LibraryCard key={assignment.id} assignment={assignment} />
+            {filteredItems.map((item) => (
+              <LibraryCard
+                key={item.id}
+                item={item}
+                isDeleting={deletingId === item.id}
+                onDelete={() => void handleDelete(item.id)}
+              />
             ))}
           </div>
         )}
@@ -138,40 +190,56 @@ export function LibraryPage() {
   );
 }
 
-function LibraryCard({ assignment }: { assignment: AssignmentListItem }) {
+function LibraryCard({
+  item,
+  isDeleting,
+  onDelete,
+}: {
+  item: LibraryListItem;
+  isDeleting: boolean;
+  onDelete: () => void;
+}) {
+  const Icon = TOOL_ICONS[item.tool];
+
   return (
-    <Link
-      href={`/assignments/${assignment.id}`}
-      className="block rounded-2xl border border-[#e5e7eb] bg-white p-5 shadow-sm transition-colors hover:border-[#d1d5db]"
-    >
+    <div className="rounded-2xl border border-[#e5e7eb] bg-white p-5 shadow-sm transition-colors hover:border-[#d1d5db]">
       <div className="flex items-start gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#ecfdf5]">
-          <FileText className="h-5 w-5 text-[#22c55e]" />
+        <div
+          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${TOOL_ACCENTS[item.tool]}`}
+        >
+          <Icon className="h-5 w-5" />
         </div>
         <div className="min-w-0 flex-1">
-          <h3 className="text-base font-bold text-[#1a1a1a] sm:text-lg">
-            {assignment.title}
-          </h3>
-          <p className="mt-1 text-xs text-[#6b7280]">
-            Generated question paper
-          </p>
+          <Link href={`/library/${item.id}`} className="block">
+            <h3 className="text-base font-bold text-[#1a1a1a] sm:text-lg">
+              {item.title}
+            </h3>
+            <p className="mt-1 text-xs text-[#6b7280]">
+              {TOOLKIT_TOOL_LABELS[item.tool]}
+            </p>
+          </Link>
         </div>
+        <button
+          type="button"
+          onClick={onDelete}
+          disabled={isDeleting}
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[#6b7280] transition-colors hover:bg-[#fef2f2] hover:text-[#ef4444] disabled:opacity-50"
+          aria-label="Delete from library"
+        >
+          {isDeleting ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Trash2 className="h-4 w-4" />
+          )}
+        </button>
       </div>
 
-      <div className="mt-6 flex items-end justify-between gap-4 text-xs text-[#6b7280] sm:text-sm">
-        <p>
-          Created :{" "}
-          <span className="font-medium text-[#374151]">
-            {formatDisplayDate(assignment.assignedDate)}
-          </span>
-        </p>
-        <p>
-          Due :{" "}
-          <span className="font-medium text-[#374151]">
-            {formatDisplayDate(assignment.dueDate)}
-          </span>
-        </p>
+      <div className="mt-6 text-xs text-[#6b7280] sm:text-sm">
+        Saved :{" "}
+        <span className="font-medium text-[#374151]">
+          {formatDisplayDate(item.createdAt)}
+        </span>
       </div>
-    </Link>
+    </div>
   );
 }

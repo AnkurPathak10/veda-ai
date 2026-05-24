@@ -40,6 +40,8 @@ export async function cacheDel(key: string): Promise<void> {
 export const CACHE_TTL = {
   EXTRACTED_TEXT: 86_400,
   QUESTION_PAPER: 604_800,
+  TOOLKIT_RESULT: 604_800,
+  LIBRARY_LIST: 60,
   ASSIGNMENTS_LIST: 60,
   NOTIFICATIONS_LIST: 30,
 } as const;
@@ -47,6 +49,8 @@ export const CACHE_TTL = {
 export const CACHE_KEYS = {
   extractedText: (filename: string) => `extracted-text:${filename}`,
   questionPaper: (hash: string) => `question-paper:${hash}`,
+  toolkitResult: (tool: string, hash: string) => `toolkit:${tool}:${hash}`,
+  libraryList: (userId: string) => `library:list:${userId}`,
   assignmentsList: (userId: string) => `assignments:list:${userId}`,
   notificationsList: (userId: string) => `notifications:list:${userId}`,
   notificationsUnreadCount: (userId: string) =>

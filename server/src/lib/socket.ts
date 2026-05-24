@@ -1,5 +1,12 @@
 import type { Server, Socket } from "socket.io";
 import type { ParsedQuestionPaper } from "./question-paper-schema.js";
+import type {
+  ChapterSummary,
+  DifferentiatedPapers,
+  LessonPlan,
+  ToolkitToolId,
+  Worksheet,
+} from "./toolkit/schemas.js";
 
 let io: Server | null = null;
 
@@ -20,6 +27,21 @@ export type JobCompletePayload = {
 };
 
 export type JobFailedPayload = {
+  jobId: string;
+  status: "FAILED";
+  error: string;
+};
+
+export type ToolkitJobCompletePayload = {
+  jobId: string;
+  status: "COMPLETED";
+  progress: 100;
+  tool: ToolkitToolId;
+  result: LessonPlan | Worksheet | DifferentiatedPapers | ChapterSummary;
+  model: string;
+};
+
+export type ToolkitJobFailedPayload = {
   jobId: string;
   status: "FAILED";
   error: string;
@@ -51,6 +73,24 @@ export function emitJobComplete(payload: JobCompletePayload): void {
 
 export function emitJobFailed(payload: JobFailedPayload): void {
   getSocketServer().to(jobRoom(payload.jobId)).emit("job:failed", payload);
+}
+
+export function emitToolkitJobProgress(payload: JobProgressPayload): void {
+  getSocketServer()
+    .to(jobRoom(payload.jobId))
+    .emit("toolkit:progress", payload);
+}
+
+export function emitToolkitJobComplete(payload: ToolkitJobCompletePayload): void {
+  getSocketServer()
+    .to(jobRoom(payload.jobId))
+    .emit("toolkit:complete", payload);
+}
+
+export function emitToolkitJobFailed(payload: ToolkitJobFailedPayload): void {
+  getSocketServer()
+    .to(jobRoom(payload.jobId))
+    .emit("toolkit:failed", payload);
 }
 
 function isValidJobId(jobId: unknown): jobId is string {
