@@ -90,9 +90,31 @@ async function waitForJobCompletion(
         });
       },
       onFailed: (event) => {
-        finish(() => {
-          reject(new Error(event.error));
-        });
+        void (async () => {
+          try {
+            const job = await getJobStatus(jobId);
+
+            if (job.status === "COMPLETED" && job.questionPaper && job.model) {
+              finish(() => {
+                resolve({
+                  questionPaper: job.questionPaper!,
+                  model: job.model!,
+                });
+              });
+              return;
+            }
+
+            if (job.status === "PENDING" || job.status === "GENERATING") {
+              return;
+            }
+          } catch {
+            // Fall through to reject below.
+          }
+
+          finish(() => {
+            reject(new Error(event.error));
+          });
+        })();
       },
     });
 

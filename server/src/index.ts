@@ -3,6 +3,7 @@ import cors from "cors";
 import express from "express";
 import { createServer } from "http";
 import path from "node:path";
+import { UPLOADS_DIR } from "./lib/uploads-dir.js";
 import { Server } from "socket.io";
 import { requireBearerAuth } from "./lib/auth.js";
 import { prisma } from "./lib/prisma.js";
@@ -82,7 +83,7 @@ app.post(
 );
 
 app.use(express.json());
-app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
+app.use("/uploads", express.static(UPLOADS_DIR));
 
 app.post("/api/uploads", (req, res, next) => {
   uploadMiddleware(req, res, (error) => {
@@ -90,7 +91,7 @@ app.post("/api/uploads", (req, res, next) => {
       handleUploadError(error, req, res, next);
       return;
     }
-    handleUpload(req, res);
+    void handleUpload(req, res);
   });
 });
 

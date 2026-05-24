@@ -38,7 +38,7 @@ export async function cacheDel(key: string): Promise<void> {
 }
 
 export const CACHE_TTL = {
-  EXTRACTED_TEXT: 86_400,
+  EXTRACTED_TEXT: 604_800,
   QUESTION_PAPER: 604_800,
   TOOLKIT_RESULT: 604_800,
   LIBRARY_LIST: 60,

@@ -3,13 +3,14 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 import multer from "multer";
 import type { Request, Response, NextFunction } from "express";
+import { extractTextFromUpload } from "../lib/extract-text.js";
+import { UPLOADS_DIR, getUploadFilePath } from "../lib/uploads-dir.js";
 
-const uploadsDir = path.join(process.cwd(), "uploads");
-fs.mkdirSync(uploadsDir, { recursive: true });
+fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => {
-    cb(null, uploadsDir);
+    cb(null, UPLOADS_DIR);
   },
   filename: (_req, file, cb) => {
     const ext = path.extname(file.originalname);
@@ -30,9 +31,39 @@ export const uploadMiddleware = multer({
   },
 }).single("file");
 
-export function handleUpload(req: Request, res: Response) {
+function formatUploadProcessingError(error: unknown): string {
+  if (!(error instanceof Error)) {
+    return "Failed to process uploaded file";
+  }
+
+  if (
+    error.message.toLowerCase().includes("enoent") ||
+    error.message.includes("no such file or directory")
+  ) {
+    return "Could not read the uploaded file on the server. Please try uploading again.";
+  }
+
+  return error.message;
+}
+
+export async function handleUpload(req: Request, res: Response) {
   if (!req.file) {
     res.status(400).json({ error: "No file uploaded" });
+    return;
+  }
+
+  try {
+    await extractTextFromUpload(req.file.filename, req.file.mimetype);
+  } catch (error) {
+    try {
+      await fs.promises.unlink(getUploadFilePath(req.file.filename));
+    } catch {
+      // Ignore cleanup errors.
+    }
+
+    res.status(400).json({
+      error: formatUploadProcessingError(error),
+    });
     return;
   }
 

@@ -1,5 +1,6 @@
 import { Worker, type Job } from "bullmq";
 import { createRedisConnection } from "../lib/redis.js";
+import { isFinalJobFailure } from "../lib/job-utils.js";
 import {
   emitToolkitJobComplete,
   emitToolkitJobFailed,
@@ -71,6 +72,14 @@ export function startToolkitWorker(): Worker<
 
   worker.on("failed", (job, error) => {
     const jobId = job?.id ?? "";
+
+    if (!isFinalJobFailure(job)) {
+      console.warn(
+        `Toolkit job ${jobId} failed attempt ${job?.attemptsMade ?? "?"} — retrying`,
+      );
+      return;
+    }
+
     console.error(`Toolkit job ${jobId} failed:`, error);
 
     if (jobId) {

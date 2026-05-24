@@ -103,9 +103,32 @@ async function waitForToolkitJobCompletion(
         });
       },
       onFailed: (event) => {
-        finish(() => {
-          reject(new Error(event.error));
-        });
+        void (async () => {
+          try {
+            const job = await getToolkitJobStatus(jobId);
+
+            if (job.status === "COMPLETED" && job.tool && job.result && job.model) {
+              finish(() => {
+                resolve({
+                  tool: job.tool!,
+                  result: job.result!,
+                  model: job.model!,
+                });
+              });
+              return;
+            }
+
+            if (job.status === "PENDING" || job.status === "GENERATING") {
+              return;
+            }
+          } catch {
+            // Fall through to reject below.
+          }
+
+          finish(() => {
+            reject(new Error(event.error));
+          });
+        })();
       },
     });
 

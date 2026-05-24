@@ -15,10 +15,10 @@ export function getQuestionPaperQueue(): Queue<QuestionPaperJobData> {
       defaultJobOptions: {
         removeOnComplete: 100,
         removeOnFail: 50,
-        attempts: 2,
+        attempts: 4,
         backoff: {
           type: "exponential",
-          delay: 3000,
+          delay: 5000,
         },
       },
     });

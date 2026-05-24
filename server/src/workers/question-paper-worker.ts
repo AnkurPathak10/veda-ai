@@ -1,5 +1,6 @@
 import { Worker, type Job } from "bullmq";
 import { createRedisConnection } from "../lib/redis.js";
+import { isFinalJobFailure } from "../lib/job-utils.js";
 import {
   emitJobComplete,
   emitJobFailed,
@@ -70,6 +71,14 @@ export function startQuestionPaperWorker(): Worker<
 
   worker.on("failed", (job, error) => {
     const jobId = job?.id ?? "";
+
+    if (!isFinalJobFailure(job)) {
+      console.warn(
+        `Question paper job ${jobId} failed attempt ${job?.attemptsMade ?? "?"} — retrying`,
+      );
+      return;
+    }
+
     console.error(`Question paper job ${jobId} failed:`, error);
 
     if (jobId) {
